@@ -49,41 +49,47 @@ class ProfilingIOLoop(tornado.ioloop.PollIOLoop):
         """
         start = self.time()
         ret = super(ProfilingIOLoop, self)._run_callback(callback)
-        took = self.time() - start
-
         try:
-            # If we are a coroutine, there are 2 paths we can have here
-            coroutine = callback.func.func_closure[-1].cell_contents.func_closure[0].cell_contents
+            took = self.time() - start
 
-            # (1) If this is a Runner (from a yield)
-            if isinstance(coroutine, tornado.gen.Runner):
+            try:
+                # If we are a coroutine, there are 2 paths we can have here
+                coroutine = callback.func.func_closure[-1].cell_contents.func_closure[0].cell_contents
+
+                # (1) If this is a Runner (from a yield)
+                if isinstance(coroutine, tornado.gen.Runner):
+                    key = (
+                        coroutine.gen.gi_code.co_filename,
+                        coroutine.gen.gi_code.co_name,
+                        coroutine.gen.gi_code.co_firstlineno,
+                    )
+                # (2) Otherwise this is the first call of a coroutine
+                else:
+                    key = (
+                        coroutine.func_code.co_filename,
+                        coroutine.func_code.co_name,
+                        coroutine.func_code.co_firstlineno,
+                    )
+            except:
+                # If this wasn't a coroutine, then this is a straight callback
                 key = (
-                    coroutine.gen.gi_code.co_filename,
-                    coroutine.gen.gi_code.co_name,
-                    coroutine.gen.gi_code.co_firstlineno,
+                    callback.func.func_closure[-1].cell_contents.func_code.co_filename,
+                    callback.func.func_closure[-1].cell_contents.func_code.co_name,
+                    callback.func.func_closure[-1].cell_contents.func_code.co_firstlineno,
                 )
-            # (2) Otherwise this is the first call of a coroutine
-            else:
-                key = (
-                    coroutine.func_code.co_filename,
-                    coroutine.func_code.co_name,
-                    coroutine.func_code.co_firstlineno,
-                )
+
+            # Store the metrics
+            try:
+                self._timing[key]['sum'] += took
+                self._timing[key]['count'] += 1
+                self._timing[key]['max'] = max(self._timing[key]['max'], took)
+            except KeyError:
+                self._timing[key] = {'sum': took, 'count': 1, 'max': took}
+        except KeyboardInterrupt:
+            raise
         except:
-            # If this wasn't a coroutine, then this is a straight callback
-            key = (
-                callback.func.func_closure[-1].cell_contents.func_code.co_filename,
-                callback.func.func_closure[-1].cell_contents.func_code.co_name,
-                callback.func.func_closure[-1].cell_contents.func_code.co_firstlineno,
-            )
-
-        # TODO: better (faster?) metrics?
-        try:
-            self._timing[key]['sum'] += took
-            self._timing[key]['count'] += 1
-            self._timing[key]['max'] = max(self._timing[key]['max'], took)
-        except KeyError:
-            self._timing[key] = {'sum': took, 'count': 1, 'max': took}
-        # Print out the timing info of callbacks
-        #print (self._timing)
-        return ret
+            # TODO: log an error-- since we goofed somehow, but we don't want to break
+            # IOLoop processing
+            pass
+        finally:
+            return ret
