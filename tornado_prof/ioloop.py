@@ -55,7 +55,8 @@ class ProfilingIOLoop(tornado.ioloop.PollIOLoop):
         # to figure out if this is a wrapped coroutine
         if key == ('tornado.gen', '<lambda>'):
             # Key will be (filename, function_name)
-            # TODO: find a way to get module name from generator?
+            # TODO: find a way to get module name from generator? -- otherwise subsequent
+            # yields of a coroutine end up showing up as a filepath instead of the module name
             try:
                 key = (
                     callback.func.func_closure[-1].cell_contents.func_closure[0].cell_contents.gen.gi_code.co_filename,
