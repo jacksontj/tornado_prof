@@ -1,5 +1,7 @@
+import sys
 import select
 
+import tornado.gen
 import tornado.ioloop
 
 
@@ -19,6 +21,9 @@ class ProfilingIOLoop(tornado.ioloop.PollIOLoop):
 
         # Dict to store timing data in
         self._timing = {}
+
+        # map of filename -> module for generators that we see
+        self._generator_map = {}
 
     def get_timings(self, reset=True):
         """Method to return timing data from the IOLoop
@@ -46,24 +51,31 @@ class ProfilingIOLoop(tornado.ioloop.PollIOLoop):
         ret = super(ProfilingIOLoop, self)._run_callback(callback)
         took = self.time() - start
 
-        # TODO: find a way to get filename from function?
-        # Key will be (module, function_name)
-        key = (callback.func.func_closure[-1].cell_contents.__module__, callback.func.func_closure[-1].cell_contents.func_name)
+        try:
+            # If we are a coroutine, there are 2 paths we can have here
+            coroutine = callback.func.func_closure[-1].cell_contents.func_closure[0].cell_contents
 
-        # TODO: less magic way to do this?
-        # If the callback is actually from the tornado.gen section as a lambda we need
-        # to figure out if this is a wrapped coroutine
-        if key == ('tornado.gen', '<lambda>'):
-            # Key will be (filename, function_name)
-            # TODO: find a way to get module name from generator? -- otherwise subsequent
-            # yields of a coroutine end up showing up as a filepath instead of the module name
-            try:
+            # (1) If this is a Runner (from a yield)
+            if isinstance(coroutine, tornado.gen.Runner):
                 key = (
-                    callback.func.func_closure[-1].cell_contents.func_closure[0].cell_contents.gen.gi_code.co_filename,
-                    callback.func.func_closure[-1].cell_contents.func_closure[0].cell_contents.gen.gi_code.co_name,
+                    coroutine.gen.gi_code.co_filename,
+                    coroutine.gen.gi_code.co_name,
+                    coroutine.gen.gi_code.co_firstlineno,
                 )
-            except AttributeError:
-                return ret
+            # (2) Otherwise this is the first call of a coroutine
+            else:
+                key = (
+                    coroutine.func_code.co_filename,
+                    coroutine.func_code.co_name,
+                    coroutine.func_code.co_firstlineno,
+                )
+        except:
+            # If this wasn't a coroutine, then this is a straight callback
+            key = (
+                callback.func.func_closure[-1].cell_contents.func_code.co_filename,
+                callback.func.func_closure[-1].cell_contents.func_code.co_name,
+                callback.func.func_closure[-1].cell_contents.func_code.co_firstlineno,
+            )
 
         # TODO: better (faster?) metrics?
         try:
