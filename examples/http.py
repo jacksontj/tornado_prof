@@ -1,4 +1,59 @@
 '''An example of how to use tornado_prof in a Tornado HTTP server application
+
+# Example /metrics output
+    {
+        "http.py:get:40": {
+            "count": 1,
+            "max": 0.0003428459167480469,
+            "sum": 0.0003428459167480469
+        },
+        "http.py:good_coroutine:27": {
+            "count": 2,
+            "max": 0.00012302398681640625,
+            "sum": 0.0002009868621826172
+        },
+        "http.py:bad_coroutine:32": {
+            "count": 1,
+            "max": 0.5006809234619141,
+            "sum": 0.5006809234619141
+        },
+        "http.py:get:53": {
+            "count": 2,
+            "max": 0.5009949207305908,
+            "sum": 0.5012478828430176
+        },
+        "http.py:complete:22": {
+            "count": 1,
+            "max": 5.1021575927734375e-05,
+            "sum": 5.1021575927734375e-05
+        },
+        "/usr/lib/python/site-packages/tornado/gen.py:<lambda>:915": {
+            "count": 1,
+            "max": 5.1021575927734375e-05,
+            "sum": 5.1021575927734375e-05
+        },
+        "/usr/lib/python/site-packages/tornado/http1connection.py:_server_request_loop:713": {
+            "count": 4,
+            "max": 0.00034499168395996094,
+            "sum": 0.0008280277252197266
+        },
+        "/usr/lib/python/site-packages/tornado/http1connection.py:_read_message:153": {
+            "count": 5,
+            "max": 0.002012014389038086,
+            "sum": 0.0037462711334228516
+        },
+        "/usr/lib/python/site-packages/tornado/ioloop.py:_run:1037": {
+            "count": 8,
+            "max": 0.002833127975463867,
+            "sum": 0.02073216438293457
+        },
+        "/usr/lib/python/site-packages/tornado/web.py:_execute:1430": {
+            "count": 1,
+            "max": 0.0006561279296875,
+            "sum": 0.0006561279296875
+        }
+
+    }
 '''
 
 import time
