@@ -35,6 +35,17 @@ class ProfilingIOLoop(tornado.ioloop.PollIOLoop):
         else:
             return self._timing
 
+    def _store_timing(self, key, took):
+        """Store timing information internally
+        """
+        # Store the metrics
+        try:
+            self._timing[key]['sum'] += took
+            self._timing[key]['count'] += 1
+            self._timing[key]['max'] = max(self._timing[key]['max'], took)
+        except KeyError:
+            self._timing[key] = {'sum': took, 'count': 1, 'max': took}
+
     def _run_callback(self, callback):
         """To keep track of how long everything took we need to wrap _run_callback
 
@@ -78,13 +89,7 @@ class ProfilingIOLoop(tornado.ioloop.PollIOLoop):
                     callback.func.func_closure[-1].cell_contents.func_code.co_firstlineno,
                 )
 
-            # Store the metrics
-            try:
-                self._timing[key]['sum'] += took
-                self._timing[key]['count'] += 1
-                self._timing[key]['max'] = max(self._timing[key]['max'], took)
-            except KeyError:
-                self._timing[key] = {'sum': took, 'count': 1, 'max': took}
+            self._store_timing(key, took)
         except KeyboardInterrupt:
             raise
         except:
