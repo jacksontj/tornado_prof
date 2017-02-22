@@ -8,7 +8,7 @@ import tornado.gen
 import tornado_prof.ioloop
 
 
-def timing_coroutine(func):
+def coroutine(func):
     """Replacement coroutine decorator which times the initial call
     """
     wrapped = tornado.gen._make_coroutine_wrapper(func, True)
@@ -46,4 +46,4 @@ def timing_coroutine(func):
 def monkey_patch():
     """Monkey patch tornado.gen.coroutine to use the timing coroutine
     """
-    tornado.gen.coroutine = timing_coroutine
+    tornado.gen.coroutine = coroutine
