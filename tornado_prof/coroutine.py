@@ -19,6 +19,8 @@ def coroutine(func):
 
     @functools.wraps(wrapped)
     def wrapper(*args, **kwargs):
+        if not ioloop.timing_enabled:
+            return wrapped(*args, **kwargs)
         start = time.time()
         try:
             ret = wrapped(*args, **kwargs)

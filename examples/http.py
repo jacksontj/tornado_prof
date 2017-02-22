@@ -102,6 +102,14 @@ class MetricsHandler(tornado.web.RequestHandler):
         self.write(json.dumps(json_metrics))
 
 
+class ToggleHandler(tornado.web.RequestHandler):
+    """Endpoint to toggle timing
+    """
+    def get(self):
+        tornado.ioloop.IOLoop.current().timing_enabled = not tornado.ioloop.IOLoop.current().timing_enabled
+        self.write(str(tornado.ioloop.IOLoop.current().timing_enabled))
+
+
 class MainHandler(tornado.web.RequestHandler):
     """Simple handler which will call a few coroutines on each request
     """
@@ -118,6 +126,7 @@ def make_app():
     """
     return tornado.web.Application([
         (r"/metrics", MetricsHandler),
+        (r"/toggle", ToggleHandler),
         (r"/", MainHandler),
     ], debug=True)
 

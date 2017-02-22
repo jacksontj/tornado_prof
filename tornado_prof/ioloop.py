@@ -19,6 +19,9 @@ class ProfilingIOLoop(tornado.ioloop.PollIOLoop):
             impl = select.select()
         super(ProfilingIOLoop, self).initialize(impl=impl, **kwargs)
 
+        # Whether we should collect timing info
+        self.timing_enabled = True
+
         # Dict to store timing data in
         self._timing = {}
 
@@ -58,6 +61,9 @@ class ProfilingIOLoop(tornado.ioloop.PollIOLoop):
             These are a bit trickier-- as they will yield and call back etc. We need to
             do some additional unwrapping to make sure we account correctly
         """
+        if not self.timing_enabled:
+            return super(ProfilingIOLoop, self)._run_callback(callback)
+
         start = self.time()
         ret = super(ProfilingIOLoop, self)._run_callback(callback)
         try:
