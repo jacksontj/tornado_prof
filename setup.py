@@ -16,7 +16,7 @@ config = {
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 2.7',
     ],
-    'version': '0.0.5',
+    'version': '0.0.6',
     'packages': ['tornado_prof'],
     'scripts': [],
     'name': 'tornado-prof',
